@@ -6,7 +6,6 @@
 void cipher_openssl_aes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 void cipher_our_aes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 void cipher_saes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
-char** generate_keys_from_passwords(const char* password1, const char* password2);
 
 
 void print_hex(const unsigned char *data, size_t length) {
@@ -19,7 +18,6 @@ void print_hex(const unsigned char *data, size_t length) {
 int main() {
 
     unsigned char key[32]; // Buffer for key (256 bits)
-    unsigned char key_sh[16]; // Buffer for shuffling key (128 bits)
     unsigned char plaintext[16] = "Hello, World!!!!"; // 128-bit plaintext
     unsigned char cipher[16];
 
@@ -58,26 +56,20 @@ int main() {
         }
 
         switch (key_size) {
-            //stdin to key
             case 1:
-                printf("Enter key (16 bytes): ");
-                fgets(key, 16, stdin);
                 // 128 bits (16 bytes)
-                memcpy(key, "0123456789abcdef", 16); // 16 bytes
+                   memcpy(key, "0123456789abcdef", 16); // 16 bytes
                 key_size = 16;
                 size = 128;
                 break;
             case 2:
-                printf("Enter key (24 bytes): ");
-                fgets(key, 24, stdin);
                 // 192 bits (24 bytes)
                 memcpy(key, "0123456789abcdef01234567", 24); // 24 bytes
                 key_size = 24;
                 size = 192;
                 break;
             case 3:
-                printf("Enter key (32 bytes): ");
-                fgets(key, 32, stdin);
+                // 256 bits (32 bytes)
                 memcpy(key, "0123456789abcdef0123456789abcdef", 32); // 32 bytes
                 key_size = 32;
                 size = 256;
@@ -100,14 +92,6 @@ int main() {
                     
                 break;
             case 2:
-                printf("Enter the SK (16 bytes): ");
-                fgets(key_sh, 16, stdin);
-                char** passwords; 
-                passwords = generate_keys_from_passwords(key, key_sh);
-                memcpy(key, passwords[0], 16); // 16 bytes
-                memcpy(key_sh, passwords[1], 16); // 16 bytes
-                printf("---> Key (hex): ");
-                print_hex(key, 16);
                 cipher_saes(key, plaintext, key_size, cipher);
                 
                 printf("---> Encrypted text (hex): ");
