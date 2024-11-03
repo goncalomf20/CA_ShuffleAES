@@ -7,7 +7,6 @@ void cipher_openssl_aes(unsigned char key[], unsigned char plaintext[16], int ke
 void cipher_our_aes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 void cipher_saes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 
-
 void print_hex(const unsigned char *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
         printf("%02x", data[i]);
@@ -45,7 +44,6 @@ int main() {
         
         memset(key, 0, 32); 
         int key_size = 0;
-        int size;
         while ( key_size < 1 || key_size > 3) {
             printf("Select key size (128, 192, 256 bits):\n");
             printf("1. 128 bits\n");
@@ -58,21 +56,19 @@ int main() {
         switch (key_size) {
             case 1:
                 // 128 bits (16 bytes)
-                   memcpy(key, "0123456789abcdef", 16); // 16 bytes
+                memcpy(key, "0123456789abcdef", 16); // 16 bytes
                 key_size = 16;
-                size = 128;
                 break;
             case 2:
                 // 192 bits (24 bytes)
                 memcpy(key, "0123456789abcdef01234567", 24); // 24 bytes
                 key_size = 24;
-                size = 192;
+
                 break;
             case 3:
                 // 256 bits (32 bytes)
                 memcpy(key, "0123456789abcdef0123456789abcdef", 32); // 32 bytes
                 key_size = 32;
-                size = 256;
                 break;
         }
         printf("---> Key (hex): ");
@@ -85,7 +81,7 @@ int main() {
         
         switch (choice) {
             case 1:
-                cipher_our_aes(key, plaintext, size , cipher);
+                cipher_our_aes(key, plaintext, key_size, cipher);
                
                 printf("---> Encrypted text (hex): ");
                 print_hex(cipher, 16); 
@@ -124,8 +120,6 @@ int main() {
                 print_hex(saes_cipher, 16);
 
                 break;
-
-            
         }
 
     }
