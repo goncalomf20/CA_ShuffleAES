@@ -3,6 +3,7 @@
 #include <openssl/aes.h>
 #include <openssl/rand.h>
 #include "our_aes.h"
+#include <stdint.h>
 
 unsigned char sboxoriginal[256] = {
     // 0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -47,9 +48,9 @@ void s_subBytes(unsigned char *state, unsigned char *sbox);
 
 void s_addRoundKey(unsigned char *state, unsigned char *roundKey , unsigned char *sk)
 {
-      for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++) {
         // XOR each byte of the round key with state
-        // Use sk[i % 8] to repeat the  64-bit SK across 128 bits
+        // Use sk[i % 8] to repeat the 64-bit SK across 128 bits
         state[i] ^= roundKey[i] ^ sk[i % 8];
     }
 }
@@ -126,11 +127,20 @@ void s_subBytes(unsigned char *state, unsigned char *sbox)
 
 // Fisher-Yates shuffle to generate a key-dependent S-Box
 void shuffle_sbox(unsigned char *sbox, unsigned char *key) {
-    // Seed the random number generator with the key
-    // Perform the Fisher-Yates shuffle on all 256 elements
-    for (int i = 256 - 1; i > 0; i--) {
-        // Generate a random index from 0 to i
-        int j = rand() % (i + 1);
+      // Create a seed based on the key bytes
+    uint64_t seed = 0;
+    for (int i = 0; i < 16 && i < 8; i++) {
+        seed = (seed << 8) | key[i]; // Combine key bytes into a 64-bit seed
+    }
+
+    // Fisher-Yates shuffle, but with a deterministic sequence based on the seed
+    for (int i = 255; i > 0; i--) {
+        // Update seed to get a pseudo-random sequence
+        seed = (seed * 6364136223846793005ULL + 1); // LCG parameters
+
+        // Deterministically generate index j based on the seed
+        int j = seed % (i + 1);
+
         // Swap elements at indices i and j
         unsigned char temp = sbox[i];
         sbox[i] = sbox[j];
@@ -151,9 +161,11 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     }
 
 
+ 
+
     unsigned int selected_round;
     select_round(s1,&selected_round);
-    printf("Selected round: %u\n", selected_round);
+    // printf("Selected round: %u\n", selected_round);
 
     // S-Box
     unsigned char ssbox[256];
@@ -177,11 +189,6 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     //     }
     // }
 
-
-    
-
-
-
     int nr_key_chars = key_size * (rounds + 1) ;  // NR de characteres das Keys
     // 10 caracteres para as N rondas e mais um para a original
 
@@ -194,7 +201,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
 
 
     expandKey(expandedKey, key, key_size, nr_key_chars);
-
+    
 
     // key scheduling
     // A primeira chave a ser usada não leva alterações  -> Key original (16 bytes)
@@ -223,12 +230,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     }
 
 
-    // printf("    Key que vai ser usada:");
-    // for (i = 0; i < 16; i++)
-    // {
-    //     printf(" %02x ",roundKey[i]);
-
-    // }
+    
 
     // printf("\n    Resultado antes da Transformação inicial:");
     // for (i = 0; i < 16; i++)
@@ -238,6 +240,8 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     // }
 
     getPseudoRandomPermo(s1,roundKey);
+ 
+        
     addRoundKey(block, roundKey);
 
 
@@ -249,31 +253,39 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     // }
 
     // printf("\n**************************************************\n");
-    printf("*   Começar as %d rondas *\n", rounds);
-    printf("**************************************************\n");
+    // printf("*   Começar as %d rondas *\n", rounds);
+    // printf("**************************************************\n");
 
     for (int i = 1; i < rounds; i++) {
-        printf("\n        --- Ronda %d --- \n", i);
+        // printf("\n        --- Ronda %d --- \n", i);
 
 
         createRoundKey(expandedKey + 16 * i, roundKey);
+        // printf("bloco: %d " , i);
+        // print_hex(block, 16);
         
-        printf("    Key que vai ser usada:");
+        // printf("    Key que vai ser usada:");
 
-        for (j = 0; j < 16; j++)
-        {
-            printf(" %02x ",roundKey[j]);
+        // for (j = 0; j < 16; j++)
+        // {
+        //     printf(" %02x ",roundKey[j]);
 
-        }
-        printf("\n");
+        // }
+        // printf("\n");
 
 
         if (i == selected_round) {
+            
+         
+
             s_subBytes(block, ssbox);
             shiftRows(block);
             mixColumns(block);
             getPseudoRandomPermo(s1,roundKey);
-            s_addRoundKey(block, roundKey, s2);
+
+           
+    
+            s_addRoundKey(block, roundKey, sk);
         } else {
             subBytes(block);
             shiftRows(block);
@@ -282,44 +294,44 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
             addRoundKey(block, roundKey);
         }
 
-        printf("    Resultado da ronda %d:", i);
-        for (k = 0; k < 16; k++)
-        {
-            printf(" %02x ",block[k]);
-
-        }
+     
 
 
     }
 
-    printf("\n        --- Ronda %d --- \n", rounds);
+    // printf("\n        --- Ronda %d --- \n", rounds);
 
 
     createRoundKey(expandedKey + 16 * rounds, roundKey);
 
-    printf("    Key que vai ser usada:");
+    // printf("    Key que vai ser usada:");
 
-    for (j = 0; j < 16; j++)
-    {
-        printf(" %02x ",roundKey[j]);
+    // for (j = 0; j < 16; j++)
+    // {
+    //     printf(" %02x ",roundKey[j]);
 
             
 
-    }
-    printf("\n");
+    // }
+    // printf("\n");
+
     
 
     subBytes(block);
     shiftRows(block);
+ 
+    print_hex(block, 16);
     getPseudoRandomPermo(s1,roundKey);
+
+
     addRoundKey(block, roundKey);
 
-    printf("    Resultado da ronda %d: ", rounds);
-    for (i = 0; i < 16; i++)
-    {
-        printf(" %02x ",block[i]);
-    }
-    printf("\n");
+    // printf("    Resultado da ronda %d: ", rounds);
+    // for (i = 0; i < 16; i++)
+    // {
+    //     printf(" %02x ",block[i]);
+    // }
+    // printf("\n");
 
     for (i = 0; i < 4; i++)
     {
@@ -328,12 +340,12 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
             cipher[(i * 4) + j] = block[(i + (j * 4))];
     }
 
-    printf("\n\n--> Resultado da final : " );
-    for (i = 0; i < 16; i++)
-    {
-        printf(" %02x ",cipher[i]);
-    }
-    printf("\n");
+    // printf("\n\n--> Resultado da final : " );
+    // for (i = 0; i < 16; i++)
+    // {
+    //     printf(" %02x ",cipher[i]);
+    // }
+    // printf("\n");
 
 }
 
@@ -351,6 +363,9 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
         s2[i] = sk[i + 8];
     }
 
+   
+
+
     unsigned char inv_sbox[256];
     unsigned char Ss_box[256];
     for (int i = 0; i < 256; i++) {
@@ -358,9 +373,16 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     }
     
     shuffle_sbox(Ss_box, s2);
+    
     invert_sbox(Ss_box, inv_sbox);
+
+    // for (int i = 0; i < 256; i++) {
+    //     printf("%02x ", Ss_box[i]);
+        
+    // }
+
     unsigned int result;
-    areInverses(Ss_box, inv_sbox);
+    // areInverses(Ss_box, inv_sbox);
 
 
     unsigned int selected_round;
@@ -368,23 +390,27 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     // printf("Selected round: %u\n", selected_round);
 
     int i, j;
-    unsigned char expandedKey[nr_key_chars];
+    unsigned char expandedKeyS[nr_key_chars];
     unsigned char roundKey[16];
 
+    // for (i = 0; i < 16; i++)
+    // {
+    //     printf("%2.2x", key[i]);
+    // }
+    // printf("\n");
 
-    expandKey(expandedKey, key, key_size, nr_key_chars);
+
+    expandKey(expandedKeyS, key, key_size, nr_key_chars);
 
 
 
-    printf("**************************************************\n");
-    printf("*   Começar a decifrar  *\n");
-    printf("**************************************************\n");
+    // printf("**************************************************\n");
+    // printf("*   Começar a decifrar  *\n");
+    // printf("**************************************************\n");
 
-    // print the expanded key
-    for (i = 0; i < nr_key_chars; i++)
-    {
-        printf("%2.2x%c", expandedKey[i], ((i + 1) % key_size) ? ' ' : '\n');
-    }
+    // // print the expanded key
+    
+
 
     for (i = 0; i < 4; i++)
     {
@@ -393,57 +419,53 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
             block[(i * 4) + j] = cipher[(i + (j * 4))];
     }
     
-    printf("\n        --- Ronda %d (Só XOR com key)--- \n", rounds);
+    // printf("\n        --- Ronda %d (Só XOR com key)--- \n", rounds);
     
-    createRoundKey(expandedKey + 16 * rounds, roundKey);
-    printf("    Key que vai ser usada:");
-    print_hex(roundKey, 16);
+    createRoundKey(expandedKeyS + 16 * rounds, roundKey);
+    // printf("    Key que vai ser usada:");
+    // print_hex(roundKey, 16);
         
-    printf("    Antes:");
-
-    print_hex(block, 16);
+  
     getPseudoRandomPermo(s1,roundKey);
+  
     addRoundKey(block, roundKey);
+    invShiftRows(block);
+    invSubBytes(block);
 
-    printf("    Resultado da ronda %d: ", rounds);
-    print_hex(block, 16);
 
 
     for (i = rounds - 1; i > 0; i--){
-        printf("\n        --- Ronda %d --- \n", i);
-        createRoundKey(expandedKey + 16 * i, roundKey);
+        // printf("\n        --- Ronda %d --- \n", i);
+        createRoundKey(expandedKeyS + 16 * i, roundKey);
 
-        printf("    Key que vai ser usada:");
-        print_hex(roundKey, 16);
+        // printf("    Key que vai ser usada:");
+        // print_hex(roundKey, 16);
         
-        printf("    Antes:");
+        // printf("    Antes:");
 
-        print_hex(block, 16);
+        // print_hex(block, 16);
 
         if (selected_round == i){
+            s_addRoundKey(block, roundKey, sk);
+            
+
+            invMixColumns(block);
             invShiftRows(block);
             invSSubBytes(block, inv_sbox);
-            getPseudoRandomPermo(s1,roundKey);
-            s_addRoundKey(block, roundKey, s2);
-            invMixColumns(block);
+
+           
         } else {
-            invShiftRows(block);
-            invSubBytes(block);
-            getPseudoRandomPermo(s1,roundKey);
             addRoundKey(block, roundKey);
             invMixColumns(block);
+            invShiftRows(block);
+            invSubBytes(block);
+
+           
         }
-
-        printf("    Resultado da ronda %d:", i);
-        print_hex(block, 16);
-
-
     }
 
-    createRoundKey(expandedKey, roundKey);
-    invShiftRows(block);
-    invSubBytes(block);
-    getPseudoRandomPermo(s1,roundKey);
+    createRoundKey(expandedKeyS, roundKey);
+   
     addRoundKey(block, roundKey);
 
     for (i = 0; i < 4; i++)

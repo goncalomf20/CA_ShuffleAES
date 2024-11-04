@@ -118,7 +118,7 @@ int main() {
                 printf("---> Encrypted text (hex): ");
                 print_hex(cipher, 16);
 
-                decipher_saes(key, cipher, key_size, cipher, sk);
+                decipher_saes(aes_key, cipher, 16, cipher, sk);
                 printf("---> Decrypted text (hex): ");
                 print_hex(cipher, 16);
 
