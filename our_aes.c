@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <openssl/aes.h>
 #include <openssl/rand.h>
+#include "our_aes.h"
+
 
 
 unsigned char sbox[256] = {
@@ -675,7 +677,11 @@ void expandKey(unsigned char *expandedKey,
 
     }
 
-
+    //print the expanded key
+    for (i = 0; i < nr_key_chars; i++)
+    {
+        printf("%2.2x%c", expandedKey[i], ((i + 1) % key_size) ? ' ' : '\n');
+    }
 
 
 }
