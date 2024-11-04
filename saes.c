@@ -40,7 +40,7 @@ void areInverses(unsigned char *sbox, unsigned char *inverse_sbox);
 
 // ------ AddRoundKey para a S-Round ------
 void s_addRoundKey(unsigned char *state, unsigned char *roundKey , unsigned char *sk);
-void getPseudoRandomPermo(unsigned char *roundKey , unsigned char *sk);
+void getPseudoRandomPermo( unsigned char *sk, unsigned char *roundKey) ;
 
 
 // ------ SubBytes para S-RoundKey ------
@@ -75,7 +75,7 @@ void invSSubBytes(unsigned char *state,unsigned char *sbox)
         state[i] = sbox[state[i]];
 }
 
-void getPseudoRandomPermo(unsigned char *roundKey, unsigned char *sk) {
+void getPseudoRandomPermo( unsigned char *sk, unsigned char *roundKey) {
     int roundKeyLength = 16;  // `roundKey` is 128 bits or 16 bytes
     int skLength = 8;         // `sk` is 8 bytes
 
@@ -202,7 +202,6 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
 
     expandKey(expandedKey, key, key_size, nr_key_chars);
     
-
     // key scheduling
     // A primeira chave a ser usada não leva alterações  -> Key original (16 bytes)
 
@@ -239,7 +238,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
 
     // }
 
-    getPseudoRandomPermo(s1,roundKey);
+    getPseudoRandomPermo(roundKey,s1);
  
         
     addRoundKey(block, roundKey);
@@ -281,7 +280,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
             s_subBytes(block, ssbox);
             shiftRows(block);
             mixColumns(block);
-            getPseudoRandomPermo(s1,roundKey);
+            getPseudoRandomPermo(roundKey,s1);
 
            
     
@@ -290,7 +289,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
             subBytes(block);
             shiftRows(block);
             mixColumns(block);
-            getPseudoRandomPermo(s1,roundKey);
+            getPseudoRandomPermo(roundKey, s1);
             addRoundKey(block, roundKey);
         }
 
@@ -321,7 +320,7 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     shiftRows(block);
  
     print_hex(block, 16);
-    getPseudoRandomPermo(s1,roundKey);
+    getPseudoRandomPermo(roundKey,s1);
 
 
     addRoundKey(block, roundKey);
@@ -426,7 +425,7 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     // print_hex(roundKey, 16);
         
   
-    getPseudoRandomPermo(s1,roundKey);
+    getPseudoRandomPermo(roundKey, s1);
   
     addRoundKey(block, roundKey);
     invShiftRows(block);
@@ -437,6 +436,8 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     for (i = rounds - 1; i > 0; i--){
         // printf("\n        --- Ronda %d --- \n", i);
         createRoundKey(expandedKeyS + 16 * i, roundKey);
+        getPseudoRandomPermo(roundKey, s1);
+
 
         // printf("    Key que vai ser usada:");
         // print_hex(roundKey, 16);
@@ -465,7 +466,8 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     }
 
     createRoundKey(expandedKeyS, roundKey);
-   
+    getPseudoRandomPermo(roundKey, s1);
+
     addRoundKey(block, roundKey);
 
     for (i = 0; i < 4; i++)
