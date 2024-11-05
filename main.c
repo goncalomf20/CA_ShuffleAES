@@ -12,7 +12,7 @@ void decipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char 
 
 void print_hex(const unsigned char *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
-        printf("%02x", data[i]);
+        printf(" %02x ", data[i]);
     }
     printf("\n");
 }
@@ -20,7 +20,7 @@ void print_hex(const unsigned char *data, size_t length) {
 int main() {
 
     unsigned char key[32]; // Buffer for key (256 bits)
-    unsigned char plaintext[16] = "Hello, World!!!!"; // 128-bit plaintext
+    unsigned char plaintext[16] = "tomas, trdld!a!!"; // 128-bit plaintext
     unsigned char cipher[16];
 
 
@@ -62,7 +62,7 @@ int main() {
             switch (key_size) {
                 case 1:
                     // 128 bits (16 bytes)
-                    memcpy(key, "0123456789abcdef", 16); // 16 bytes
+                    memcpy(key, "0023456789abcdef", 16); // 16 bytes
                     key_size = 16;
                     break;
                 case 2:
@@ -156,43 +156,52 @@ int main() {
                 break;
             case 4:
 
-                // char key1Ni[100], key2Ni[100];
+                char key1Ni[100], key2Ni[100];
 
-                // printf("---> Insert the fist key: ");
-                // scanf("%99s", key1Ni); 
+                printf("---> Insert the fist key: ");
+                scanf("%99s", key1Ni); 
 
-                // printf("---> Insert the second key: ");
-                // scanf("%99s", key2Ni);  
+                printf("---> Insert the second key: ");
+                scanf("%99s", key2Ni);  
 
-                // printf("You entered: Key1 = %s, Key2 = %s\n", key1Ni, key2Ni);
+                printf("You entered: Key1 = %s, Key2 = %s\n", key1Ni, key2Ni);
 
-                // char aes_keyS[16];  // AES encryption key (128-bit)
-                // char skS[16];       // Shuffling key (128-bit)
-                // char decrypted_text[16];
-                // generate_keys_from_passwords(key1, key2, aes_keyS, skS);
+                char aes_keyS[16];  // AES encryption key (128-bit)
+                char skS[16];       // Shuffling key (128-bit)
+                char deciphered_text[16];
+                char decipheredNI_text[16];
+                char encrypted_text[16];
+
+                generate_keys_from_passwords(key1, key2, aes_keyS, skS);
                 
-                // printf("\nAes Key = ");
-                // print_hex(aes_keyS, 16); 
-                // printf("Shuffled Key = ");
-                // print_hex(skS, 16); 
+                printf("\nAes Key = ");
+                print_hex(aes_keyS, 16); 
+                printf("Shuffled Key = ");
+                print_hex(skS, 16); 
 
-                // cipher_saesNI(aes_keyS, skS, plaintext, 16, cipher);
-                // printf("---> Encrypted text (hex): ");
-                // print_hex(cipher, 16);
+                printf("\n----------- NI -----------\n");
 
-                // decipher_saesNI(aes_keyS, skS, cipher, 16, cipher);
-                // printf("---> Decrypted text (hex): ");
-                // print_hex(cipher, 16);
-                unsigned char keyNI[16] = "e9c5e4a4087ff5a61a8291ecfd168368";
-                unsigned char skNI[16] = "1e764e48faab5fe527523621b17b0046";
-                unsigned char plaintextNI[16] = "48656c6c6f2c20576f726c6421212121";
-                unsigned char cipherNI[16];
-                cipher_saesNI(keyNI,skNI,plaintextNI,16,cipherNI);
-                printf("Cipher: ");
-                for (int i = 0; i < 16; i++) {
-                    printf("%02x", cipherNI[i]);
-                }
-                printf("\n");
+                cipher_saesNI(aes_keyS, skS, plaintext, 16, cipher);
+                printf("---> Encrypted text NI (hex): ");
+                print_hex(cipher, 16);
+
+                decipher_saesNI(aes_keyS, skS, cipher, 16, decipheredNI_text);
+                printf("---> Decrypted NI text (hex): ");
+                print_hex(decipheredNI_text, 16);
+
+                printf("\n----------- NORMAL SAES -----------\n");
+
+
+                cipher_saes(aes_keyS, skS, plaintext, 16, encrypted_text);
+                printf("---> Encrypted text  (hex): ");
+                print_hex(encrypted_text, 16);
+
+                decipher_saes(aes_keyS, deciphered_text, 16,encrypted_text , skS);
+                printf("---> Decrypted text (hex): ");
+                print_hex(deciphered_text, 16);
+
+                
+
                 break;
         }
 

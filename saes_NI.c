@@ -22,8 +22,9 @@ unsigned char sboxoriginalNI[256] = {
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
 
 void InvMixColumnsNI(__m128i *state);
-void invShiftRowsNI(__m128i *state);
-void invSSubBytesNI(__m128i *state, unsigned char *sbox);
+void InvShiftRowsNI(__m128i *state);
+
+void InvSSubBytesNI(__m128i *state, unsigned char *sbox);
 
 __m128i get_round_key(__m128i key, __m128i index) {
     __m128i tmp;
@@ -78,23 +79,22 @@ void getPseudoRandomPermoNI(__m128i sk, __m128i *roundKey) {
     *roundKey = _mm_loadu_si128((__m128i*)roundKey_bytes);
 }
 
+
 void InvMixColumnsNI(__m128i *state)
 {
-    __m128i tmp1, tmp2;
-    tmp1 = _mm_clmulepi64_si128(*state, *state, 0x00);
-    tmp2 = _mm_clmulepi64_si128(*state, *state, 0x11);
-    *state = _mm_xor_si128(tmp1, tmp2);
+    unsigned char *char_state = (char *)state;
+    invMixColumns(char_state);
+
+    *state = _mm_loadu_si128((__m128i*)char_state);  
 }
 
 void InvShiftRowsNI(__m128i *state)
 {
-    __m128i tmp1, tmp2;
-    tmp1 = _mm_srli_si128(*state, 4);
-    tmp2 = _mm_srli_si128(*state, 8);
-    *state = _mm_shuffle_epi32(tmp1, 0x93);
-    tmp1 = _mm_shuffle_epi32(tmp2, 0x93);
-    *state = _mm_insert_epi16(*state, _mm_extract_epi16(tmp1, 0), 0);
-    *state = _mm_insert_epi16(*state, _mm_extract_epi16(tmp1, 1), 4);
+
+    unsigned char *char_state = (char *)state;
+    invShiftRows(char_state);
+
+    *state = _mm_loadu_si128((__m128i*)char_state);  
 }
 
 void s_subBytesNI(__m128i *state, unsigned char *sbox)
@@ -109,23 +109,23 @@ void s_subBytesNI(__m128i *state, unsigned char *sbox)
     *state = _mm_loadu_si128((__m128i*)state_bytes);
 }
 
-void shiftRowsNI(__m128i state)
+void shiftRowsNI(__m128i *state)
 {
-    __m128i tmp1, tmp2;
-    tmp1 = _mm_srli_si128(state, 4);
-    tmp2 = _mm_srli_si128(state, 8);
-    state = _mm_shuffle_epi32(tmp1, 0x39);
-    tmp1 = _mm_shuffle_epi32(tmp2, 0x39);
-    state = _mm_insert_epi16(state, _mm_extract_epi16(tmp1, 0), 0);
-    state = _mm_insert_epi16(state, _mm_extract_epi16(tmp1, 1), 4);
+    unsigned char *char_state = (char *)state;
+    shiftRows(char_state);
+
+    *state = _mm_loadu_si128((__m128i*)char_state);    
+
 }
 
-void mixColumnsNI(__m128i state)
-{
-    __m128i tmp1, tmp2;
-    tmp1 = _mm_clmulepi64_si128(state, state, 0x00);
-    tmp2 = _mm_clmulepi64_si128(state, state, 0x11);
-    state = _mm_xor_si128(tmp1, tmp2);
+void mixColumnsNI(__m128i *state) {
+
+    unsigned char *char_state = (char *)state;
+  
+  
+    mixColumns(char_state);
+
+    *state = _mm_loadu_si128((__m128i*)char_state);    
 }
 
 void InvSSubBytesNI(__m128i *state, unsigned char *sbox)
@@ -140,64 +140,170 @@ void InvSSubBytesNI(__m128i *state, unsigned char *sbox)
     *state = _mm_loadu_si128((__m128i*)state_bytes);
 }
 
+void Round_block(__m128i *block) {
+    // Store the contents of `*roundKey` into an intermediate array for reordering
+    unsigned char temp[16];
+    _mm_storeu_si128((__m128i *)temp, *block);
 
-void s_addRoundKeyNI(__m128i *state, __m128i *roundKey , __m128i *sk)
-{
-    *state = _mm_xor_si128(*state, _mm_xor_si128(*roundKey, *sk));
-}
-
-void cipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char plaintext[16], int key_size, unsigned char cipher[16]) {
-
-unsigned int selected_round;
-unsigned char s1[8];
-unsigned char s2[8];
-for (int i = 0; i < 8; i++) {
-    s1[i] = sk[i];
-    s2[i] = sk[i + 8];
-}
-    // S-Box
-    unsigned char ssbox[256];
-    for (int i = 0; i < 256; i++) {
-        ssbox[i] = sboxoriginalNI[i];
-    }
-    
-    shuffle_sbox(ssbox, s2);
-    // see if the shuffled sbox is at least 50% different from the original sbox
-    int diff = 0;
-    for (int i = 0; i < 256; i++) {
-        if (ssbox[i] != sboxoriginalNI[i]) {
-            diff++;
+    // Perform the transposition to match the original function's behavior
+    unsigned char transposed[16];
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            transposed[i * 4 + j] = temp[j * 4 + i];
         }
     }
 
-__m128i key128 = _mm_loadu_si128((__m128i*)key);
-__m128i sk128 = _mm_loadu_si128((__m128i*)sk);
-__m128i plaintext128 = _mm_loadu_si128((__m128i*)plaintext);
-
-__m128i round_keys[11];
-expand_key(&key128, round_keys);
-
-select_round(s1,&selected_round);
-
-__m128i x = plaintext128;
-getPseudoRandomPermoNI(sk128, &round_keys[0]);   
-x = _mm_xor_si128(x, round_keys[0]);
-for (int i = 1; i < 10; i++) {
-    if (i == selected_round) {
-        s_subBytesNI(&x, ssbox);
-        shiftRowsNI(x);
-        mixColumnsNI(x);
-        getPseudoRandomPermoNI(sk128,&round_keys[i]);
-        s_addRoundKeyNI(&x, &round_keys[i], &sk128);
-    } else {  
-        getPseudoRandomPermoNI(sk128,&round_keys[i]);
-        x = _mm_aesenc_si128(x, round_keys[i]);
-    }
+    // Store the transposed result back into `*roundKey`
+    *block = _mm_loadu_si128((__m128i *)transposed);
 }
-getPseudoRandomPermoNI(sk128,&round_keys[10]);
-x = _mm_aesenclast_si128(x, round_keys[10]);
 
-_mm_storeu_si128((__m128i*)cipher, x);
+void s_addRoundKeyNI(__m128i *state, __m128i *roundKey , __m128i *sk)
+{
+
+    unsigned char *char_state = (char *)state;
+    unsigned char *char_sk = (char *)sk;
+    unsigned char *char_roundKey = (char *)roundKey;
+
+  
+  
+    s_addRoundKey(char_state, char_roundKey, char_sk);
+
+    *state = _mm_loadu_si128((__m128i*)char_state);   
+}
+
+void print_m128i(__m128i var) {
+    // Create a temporary array to hold the 128-bit value as bytes
+    uint8_t bytes[16];
+    _mm_storeu_si128((__m128i*)bytes, var);
+
+    // Print each byte in hexadecimal format
+    for (int i = 0; i < 16; i++) {
+        printf("%02x ", bytes[i]);
+    }
+    printf("\n");
+}
+
+
+void cipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char plaintext[16], int key_size, unsigned char cipher[16]) {
+
+    unsigned int selected_round;
+    unsigned char s1[8];
+    unsigned char s2[8];
+    for (int i = 0; i < 8; i++) {
+        s1[i] = sk[i];
+        s2[i] = sk[i + 8];
+    }
+        // S-Box
+        unsigned char ssbox[256];
+        for (int i = 0; i < 256; i++) {
+            ssbox[i] = sboxoriginalNI[i];
+        }
+        
+        shuffle_sbox(ssbox, s2);
+        // see if the shuffled sbox is at least 50% different from the original sbox
+        int diff = 0;
+        for (int i = 0; i < 256; i++) {
+            if (ssbox[i] != sboxoriginalNI[i]) {
+                diff++;
+            }
+        }
+
+    __m128i key128 = _mm_loadu_si128((__m128i*)key);
+    __m128i sk128 = _mm_loadu_si128((__m128i*)sk);
+    __m128i plaintext128 = _mm_loadu_si128((__m128i*)plaintext);
+
+    __m128i round_keys[11];
+    expand_key(&key128, round_keys);
+
+    select_round(s1,&selected_round);
+    // printf("Selected round ni: %u\n", selected_round);
+
+    // printf("Round keys ni:\n");
+    // for (int i = 0; i < 11; i++) {
+    //     uint8_t bytes[16];  // Temporary storage for the 128-bit round key
+    //     _mm_storeu_si128((__m128i*)bytes, round_keys[i]);  // Store round key in bytes array
+        
+    //     printf("Round %d: ", i);
+    //     for (int j = 0; j < 16; j++) {
+    //         printf("%02x", bytes[j]);  // Print each byte in hexadecimal format
+    //     }
+    //     printf("\n");
+    // }
+
+
+    __m128i x = plaintext128;
+    Round_block(&round_keys[0]);
+    getPseudoRandomPermoNI(sk128, &round_keys[0]);   
+    Round_block(&round_keys[0]);
+
+    // printf("\n 1 key permu ni:\n");
+
+    // uint8_t bytes[16];  // Temporary storage for the 128-bit round key
+    // _mm_storeu_si128((__m128i*)bytes, round_keys[0]);  // Store round key in bytes array
+        
+    //     for (int j = 0; j < 16; j++) {
+    //         printf("%02x", bytes[j]);  // Print each byte in hexadecimal format
+    //     }
+    //     printf("\n");
+
+
+    x = _mm_xor_si128(x, round_keys[0]);
+    // printf("\n 1 bloco depois ni : \n");
+    // print_m128i(x);
+
+
+    for (int i = 1; i < 10; i++) {
+        // printf("\n        --- Ronda NI %d --- \n", i);
+
+        Round_block(&round_keys[i]);
+        getPseudoRandomPermoNI(sk128,&round_keys[i]);
+        Round_block(&round_keys[i]);
+
+        // printf("\n key ni %d : \n" , i);
+        // print_m128i(round_keys[i]);
+
+        // printf("\n antes _mm_aesenc_si128 bloco  : \n");
+        // print_m128i(x);
+
+        if (i == selected_round) {
+            Round_block(&round_keys[i]);
+            // printf("\n key ESPECIAL ni %d : \n" , i);
+            // print_m128i(round_keys[i]);
+
+            s_subBytesNI(&x, ssbox);
+
+            Round_block(&x);
+
+            shiftRowsNI(&x);
+          
+            mixColumnsNI(&x);
+
+            // print_m128i(x);
+
+            s_addRoundKeyNI(&x, &round_keys[i], &sk128);
+
+            // printf("ESPECIAL bloco ni %d : \n", i);
+            // print_m128i(x);
+
+            Round_block(&x);
+
+        } else {  
+           
+            x = _mm_aesenc_si128(x, round_keys[i]);
+
+            // printf("depois bloco ni %d : \n", i);
+            // print_m128i(x);
+        }
+
+        
+    }
+    Round_block(&round_keys[10]);
+    getPseudoRandomPermoNI(sk128,&round_keys[10]);
+    Round_block(&round_keys[10]);
+
+    x = _mm_aesenclast_si128(x, round_keys[10]);
+
+    _mm_storeu_si128((__m128i*)cipher, x);
 }
 
 void decipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char ciphertext[16], int key_size, unsigned char plaintext[16]) {
@@ -228,27 +334,44 @@ void decipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char 
     expand_key(&key128, round_keys);
     select_round(s1, &selected_round);
 
-    // // Start decryption
+    // // // Start decryption
     __m128i x = _mm_loadu_si128((__m128i*)ciphertext);
-    getPseudoRandomPermoNI(sk128, &round_keys[10]);
-    x = _mm_xor_si128(x, round_keys[10]);
 
+    Round_block(&round_keys[10]);
+    getPseudoRandomPermoNI(sk128,&round_keys[10]);
+    Round_block(&round_keys[10]);
+    
+    x = _mm_xor_si128(x, round_keys[10]);
+   
     for (int i = 9; i > 0; i--) {
-        getPseudoRandomPermoNI(sk128, &round_keys[0]);
+
+        Round_block(&round_keys[i]);
+        getPseudoRandomPermoNI(sk128,&round_keys[i]);
+        Round_block(&round_keys[i]);
+
         if (i == selected_round) {
+
+            Round_block(&round_keys[i]);
+
             s_addRoundKeyNI(&x, &round_keys[i], &sk128);
             InvMixColumnsNI(&x);
             InvShiftRowsNI(&x);
-            InvSSubBytesNI(&x, inv_sbox);
+            InvSSubBytesNI(&x, Ss_box);
+            
+            Round_block(&x);
+
         } else {
             x = _mm_aesdec_si128(x, round_keys[i]);
         }
+
+        
     }
 
-    // // // Final round
-    getPseudoRandomPermoNI(sk128, &round_keys[0]);
-    x = _mm_aesdeclast_si128(x, round_keys[0]);
+    Round_block(&round_keys[0]);
+    getPseudoRandomPermoNI(sk128, &round_keys[0]);   
+    Round_block(&round_keys[0]);
 
+    x = _mm_aesdeclast_si128(x, round_keys[0]);
     // // //Store the result  
     _mm_storeu_si128((__m128i*)plaintext, x);
 }
