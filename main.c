@@ -7,6 +7,8 @@ void cipher_openssl_aes(unsigned char key[], unsigned char plaintext[16], int ke
 void cipher_our_aes(unsigned char key[], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
 void generate_keys_from_passwords(const char* password1, const char* password2, char* aes_key, char* sk);
+void cipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char plaintext[16], int key_size, unsigned char cipher[16]);
+void decipher_saesNI(unsigned char key[16], unsigned char sk[16], unsigned char ciphertext[16], int key_size, unsigned char plaintext[16]);
 
 void print_hex(const unsigned char *data, size_t length) {
     for (size_t i = 0; i < length; i++) {
@@ -25,27 +27,28 @@ int main() {
     while (true) {
                
         int choice = 0;
-        while ( choice < 1 || choice > 5) { 
+        while ( choice < 1 || choice > 6) { 
             printf("Select the algorithm to use:\n");
             printf("1. our AES\n");
             printf("2. SAES\n");
             printf("3. openssl AES\n");
-            printf("4. all\n");
-            printf("5. exit\n");
+            printf("4. SAES ni\n");
+            printf("5. all\n");
+            printf("6. exit\n");
 
             printf("Enter your choice: ");
             scanf("%d", &choice);
         }
         
 
-        if (choice == 5) {
+        if (choice == 6) {
             printf("End");
             break;
         }
         
         memset(key, 0, 32); 
         int key_size = 0;
-        if (choice != 2) {
+        if (choice != 2 && choice != 4) {
 
             while ( key_size < 1 || key_size > 3) {
                 printf("Select key size (128, 192, 256 bits):\n");
@@ -132,7 +135,7 @@ int main() {
                 
                    
                 break;
-            case 4:
+            case 5:
                 unsigned char our_cipher[16];
                 unsigned char openssl_cipher[16];
                 // unsigned char saes_cipher[16];
@@ -150,6 +153,46 @@ int main() {
                 // printf("------> Encrypted text (saes) (hex): ");
                 // print_hex(saes_cipher, 16);
 
+                break;
+            case 4:
+
+                // char key1Ni[100], key2Ni[100];
+
+                // printf("---> Insert the fist key: ");
+                // scanf("%99s", key1Ni); 
+
+                // printf("---> Insert the second key: ");
+                // scanf("%99s", key2Ni);  
+
+                // printf("You entered: Key1 = %s, Key2 = %s\n", key1Ni, key2Ni);
+
+                // char aes_keyS[16];  // AES encryption key (128-bit)
+                // char skS[16];       // Shuffling key (128-bit)
+                // char decrypted_text[16];
+                // generate_keys_from_passwords(key1, key2, aes_keyS, skS);
+                
+                // printf("\nAes Key = ");
+                // print_hex(aes_keyS, 16); 
+                // printf("Shuffled Key = ");
+                // print_hex(skS, 16); 
+
+                // cipher_saesNI(aes_keyS, skS, plaintext, 16, cipher);
+                // printf("---> Encrypted text (hex): ");
+                // print_hex(cipher, 16);
+
+                // decipher_saesNI(aes_keyS, skS, cipher, 16, cipher);
+                // printf("---> Decrypted text (hex): ");
+                // print_hex(cipher, 16);
+                unsigned char keyNI[16] = "e9c5e4a4087ff5a61a8291ecfd168368";
+                unsigned char skNI[16] = "1e764e48faab5fe527523621b17b0046";
+                unsigned char plaintextNI[16] = "48656c6c6f2c20576f726c6421212121";
+                unsigned char cipherNI[16];
+                cipher_saesNI(keyNI,skNI,plaintextNI,16,cipherNI);
+                printf("Cipher: ");
+                for (int i = 0; i < 16; i++) {
+                    printf("%02x", cipherNI[i]);
+                }
+                printf("\n");
                 break;
         }
 

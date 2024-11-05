@@ -274,16 +274,10 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
 
 
         if (i == selected_round) {
-            
-         
-
             s_subBytes(block, ssbox);
             shiftRows(block);
             mixColumns(block);
             getPseudoRandomPermo(roundKey,s1);
-
-           
-    
             s_addRoundKey(block, roundKey, sk);
         } else {
             subBytes(block);
