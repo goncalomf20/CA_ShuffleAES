@@ -230,22 +230,15 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
  
     getPseudoRandomPermo(s1, roundKey);
 
-    // printf("\n    1 bloco:");
-    // for (i = 0; i < 16; i++)
-    // {
-    //     printf(" %02x ",block[i]);
+      
+    // printf("\n    key 0: ");
+    // print_hex(roundKey, 16);
 
-    // }
- 
-    // printf("\n  1 key:");
-    // for (i = 0; i < 16; i++)
-    // {
-    //     printf(" %02x ",roundKey[i]);
-
-    // }
 
     addRoundKey(block, roundKey);
 
+    // printf("    bloco 0: ");
+    // print_hex(block, 16);
  
    
     // printf("\n**************************************************\n");
@@ -263,14 +256,9 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
         
         getPseudoRandomPermo(s1, roundKey);
 
-        //  printf("\n key for the round %d", i);
-        // for (j = 0; j < 16; j++)
-        // {
-        //     printf(" %02x ",roundKey[j]);
 
-        // }
-        // printf("\n");
-
+        // printf("\n    key %d: ", i);
+        // print_hex(roundKey, 16);
 
 
         if (i == selected_round) {
@@ -278,24 +266,17 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
             s_subBytes(block, ssbox);
             shiftRows(block);
             mixColumns(block);
-
             s_addRoundKey(block, roundKey, sk);
-            // printf("ESPECIAL bloco %d depois:  " , i);
-            // print_hex(block, 16);
+
+        
         } else {
             subBytes(block);
             shiftRows(block);
             mixColumns(block);
             addRoundKey(block, roundKey);
 
-            // printf(" bloco %d depois:  " , i);
-            // print_hex(block, 16);
        
         }
-
-       
-
-    
     }
 
     // printf("\n        --- Ronda %d --- \n", rounds);
@@ -314,14 +295,11 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
     // }
     // printf("\n");
 
-    
-
     subBytes(block);
     shiftRows(block);
  
     getPseudoRandomPermo(s1, roundKey);
-
-
+    
     addRoundKey(block, roundKey);
 
     // printf("    Resultado da ronda %d: ", rounds);
@@ -420,16 +398,18 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     // printf("\n        --- Ronda %d (Só XOR com key)--- \n", rounds);
     
     createRoundKey(expandedKeyS + 16 * rounds, roundKey);
-    // printf("    Key que vai ser usada:");
-    // print_hex(roundKey, 16);
-        
-  
+    
     getPseudoRandomPermo(s1, roundKey );
+
+    // printf("\n    key 10: ");
+    // print_hex(roundKey, 16);
   
     addRoundKey(block, roundKey);
     invShiftRows(block);
     invSubBytes(block);
-
+    
+    // printf("    bloco 10: ");
+    // print_hex(block, 16);
 
 
     for (i = rounds - 1; i > 0; i--){
@@ -438,36 +418,37 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
         getPseudoRandomPermo(s1, roundKey );
 
 
-        // printf("    Key que vai ser usada:");
+        // printf("\n    key %d: ", i);
         // print_hex(roundKey, 16);
-        
-        // printf("    Antes:");
-
-        // print_hex(block, 16);
 
         if (selected_round == i){
-            s_addRoundKey(block, roundKey, sk);
-            
 
+            s_addRoundKey(block, roundKey, sk);
             invMixColumns(block);
             invShiftRows(block);
             invSSubBytes(block, inv_sbox);
-
            
         } else {
+
             addRoundKey(block, roundKey);
             invMixColumns(block);
             invShiftRows(block);
             invSubBytes(block);
-
-           
+            
         }
+        
     }
 
     createRoundKey(expandedKeyS, roundKey);
     getPseudoRandomPermo(s1, roundKey );
 
+    // printf("\n    key 0: ");
+    // print_hex(roundKey, 16);
+
     addRoundKey(block, roundKey);
+
+    // printf("    bloco 0: ");
+    // print_hex(block, 16);
 
     for (i = 0; i < 4; i++)
     {
