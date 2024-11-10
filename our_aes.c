@@ -268,7 +268,6 @@ void shiftRow(unsigned char *state, unsigned char nbr)
 {
     int i, j;
     unsigned char tmp;
-    // Cada iteração dá shift 1 byte para a esquerda 
     for (i = 0; i < nbr; i++)
     {
         tmp = state[0];
@@ -535,18 +534,18 @@ void decipher_our_aes(unsigned char key[], unsigned char decipheredtext[16], int
 
     expandKey(expandedKey, key, key_size, nr_key_chars);
 
-    for (i = 0; i < nr_key_chars; i++)
-    {
-        printf("%2.2x%c", expandedKey[i], ((i + 1) % key_size) ? ' ' : '\n');
-    }
+    // for (i = 0; i < nr_key_chars; i++)
+    // {
+    //     printf("%2.2x%c", expandedKey[i], ((i + 1) % key_size) ? ' ' : '\n');
+    // }
 
 
 
-    printf("**************************************************\n");
-    printf("*   Começar a decifrar  *\n");
-    printf("**************************************************\n");
+    // printf("**************************************************\n");
+    // printf("*   Começar a decifrar  *\n");
+    // printf("**************************************************\n");
 
-    print_hex(cipher, 16);
+    // print_hex(cipher, 16);
 
     for (i = 0; i < 4; i++)
     {
@@ -555,7 +554,7 @@ void decipher_our_aes(unsigned char key[], unsigned char decipheredtext[16], int
             block[(i * 4) + j] = cipher[(i + (j * 4))];
     }
     
-    printf("\n        --- Ronda %d (Só XOR com key)--- \n", rounds);
+    // printf("\n        --- Ronda %d (Só XOR com key)--- \n", rounds);
     
     createRoundKey(expandedKey + 16 * rounds, roundKey);
     // printf("    Key que vai ser usada:");
@@ -567,20 +566,20 @@ void decipher_our_aes(unsigned char key[], unsigned char decipheredtext[16], int
     addRoundKey(block, roundKey);
 
     
-    printf("    Resultado da ronda %d: ", rounds);
-    print_hex(block, 16);
+    // printf("    Resultado da ronda %d: ", rounds);
+    // print_hex(block, 16);
 
 
     for (i = rounds - 1; i > 0; i--){
-        printf("\n        --- Ronda %d --- \n", i);
+        // printf("\n        --- Ronda %d --- \n", i);
         createRoundKey(expandedKey + 16 * i, roundKey);
 
-        printf("    Key que vai ser usada:");
-        print_hex(roundKey, 16);
+        // printf("    Key que vai ser usada:");
+        // print_hex(roundKey, 16);
         
-        printf("    Antes:");
+        // printf("    Antes:");
 
-        print_hex(block, 16);
+        // print_hex(block, 16);
 
 
         invShiftRows(block);
@@ -588,8 +587,8 @@ void decipher_our_aes(unsigned char key[], unsigned char decipheredtext[16], int
         addRoundKey(block, roundKey);
         invMixColumns(block);
 
-        printf("    Resultado da ronda %d:", i);
-        print_hex(block, 16);
+        // printf("    Resultado da ronda %d:", i);
+        // print_hex(block, 16);
 
 
     }
@@ -606,8 +605,8 @@ void decipher_our_aes(unsigned char key[], unsigned char decipheredtext[16], int
             decipheredtext[(i * 4) + j] = block[(i + (j * 4))];
     }
 
-    printf("\n    Resultado final:");
-    print_hex(decipheredtext, 16);
+    // printf("\n    Resultado final:");
+    // print_hex(decipheredtext, 16);
 
 
 

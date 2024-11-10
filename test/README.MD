@@ -1,8 +1,5 @@
 ## COMPILE AND RUN
-./run_main.sh 
+./run_deliverable.sh 
 
 ## CHECK CIPHERS
 https://paymentcardtools.com/basic-calculators/aes-calculator
-
-## COMPILE AND RUN test
-./run_test.sh 

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <openssl/aes.h>
 #include <openssl/rand.h>
-#include "our_aes.h"
 #include <stdint.h>
+#include "our_aes.h"
 
 unsigned char sboxoriginal[256] = {
     // 0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -68,9 +68,7 @@ void areInverses(unsigned char *sbox1, unsigned char *sbox2) {
 void invSSubBytes(unsigned char *state,unsigned char *sbox)
 {
     int i;
-    /* substitute all the values from the state with the value in the SBox
-     * using the state value as index for the SBox
-     */
+
     for (i = 0; i < 16; i++)
         state[i] = sbox[state[i]];
 }
@@ -79,9 +77,8 @@ void getPseudoRandomPermo( unsigned char *sk, unsigned char *roundKey) {
     int roundKeyLength = 16;  // `roundKey` is 128 bits or 16 bytes
     int skLength = 8;         // `sk` is 8 bytes
 
-    // Deterministic shuffle using only `sk`
     for (int i = roundKeyLength - 1; i > 0; i--) {
-        // Use the current byte from `sk` as a rotation offset
+
         int j = sk[i % skLength] % (i + 1);  // Ensure j is within [0, i]
 
         // Swap bytes at indices i and j
@@ -93,22 +90,17 @@ void getPseudoRandomPermo( unsigned char *sk, unsigned char *roundKey) {
 
 
 void invert_sbox(unsigned char *sbox, unsigned char *inverse_sbox) {
-    // Initialize the inverse_sbox to an invalid state
-    memset(inverse_sbox, 0xFF, 256);  // Use 0xFF to signify uninitialized
+    memset(inverse_sbox, 0xFF, 256);  
 
-    // Check if sbox is a valid permutation and invert it
     for (int i = 0; i < 256; i++) {
         unsigned char value = sbox[i];
 
-        // Check if the value is within bounds and hasn't been assigned yet
         if (value >= 256 || inverse_sbox[value] != 0xFF) {
-            // If invalid, we can either return or handle it as needed
-            // Here, we can choose to just set inverse_sbox to an error state
             memset(inverse_sbox, 0xFF, 256);  // Reset inverse_sbox to indicate an error
-            return;  // Exit the function
+            return; 
         }
 
-        inverse_sbox[value] = i;  // Set the inverse mapping
+        inverse_sbox[value] = i; 
     }
 }
 
@@ -130,18 +122,14 @@ void shuffle_sbox(unsigned char *sbox, unsigned char *key) {
       // Create a seed based on the key bytes
     uint64_t seed = 0;
     for (int i = 0; i < 16 && i < 8; i++) {
-        seed = (seed << 8) | key[i]; // Combine key bytes into a 64-bit seed
+        seed = (seed << 8) | key[i];
     }
 
-    // Fisher-Yates shuffle, but with a deterministic sequence based on the seed
     for (int i = 255; i > 0; i--) {
-        // Update seed to get a pseudo-random sequence
         seed = (seed * 6364136223846793005ULL + 1); // LCG parameters
 
-        // Deterministically generate index j based on the seed
         int j = seed % (i + 1);
 
-        // Swap elements at indices i and j
         unsigned char temp = sbox[i];
         sbox[i] = sbox[j];
         sbox[j] = temp;
@@ -230,11 +218,6 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
  
     getPseudoRandomPermo(s1, roundKey);
 
-      
-    // printf("\n    key 0: ");
-    // print_hex(roundKey, 16);
-
-
     addRoundKey(block, roundKey);
 
     // printf("    bloco 0: ");
@@ -255,10 +238,6 @@ void cipher_saes(unsigned char key[16], unsigned char sk[16], unsigned char plai
         
         
         getPseudoRandomPermo(s1, roundKey);
-
-
-        // printf("\n    key %d: ", i);
-        // print_hex(roundKey, 16);
 
 
         if (i == selected_round) {
@@ -400,9 +379,6 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
     createRoundKey(expandedKeyS + 16 * rounds, roundKey);
     
     getPseudoRandomPermo(s1, roundKey );
-
-    // printf("\n    key 10: ");
-    // print_hex(roundKey, 16);
   
     addRoundKey(block, roundKey);
     invShiftRows(block);
@@ -441,9 +417,6 @@ void decipher_saes(unsigned char key[], unsigned char decipheredtext[16], int ke
 
     createRoundKey(expandedKeyS, roundKey);
     getPseudoRandomPermo(s1, roundKey );
-
-    // printf("\n    key 0: ");
-    // print_hex(roundKey, 16);
 
     addRoundKey(block, roundKey);
 

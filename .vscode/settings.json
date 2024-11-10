@@ -2,6 +2,8 @@
     "files.associations": {
         "stdint.h": "c",
         "wmmintrin.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "string.h": "c",
+        "our_aes.h": "c"
     }
 }
